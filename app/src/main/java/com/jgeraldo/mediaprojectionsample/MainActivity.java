@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
                 MediaProjection mediaProjection = projectionManager.getMediaProjection(resultCode, data);
 
                 if (mediaProjection != null) {
+                    // ---------------- STEP 4 ---------------------
                     startScreenCapture(mediaProjection);
                 }
             }
@@ -95,6 +96,8 @@ public class MainActivity extends AppCompatActivity {
                 registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
                         result -> {
                             int resultCode = result.getResultCode();
+
+                            // ---------------- STEP 2 ---------------------
                             if (result.getResultCode() == Activity.RESULT_OK) {
                                 Intent data = result.getData();
 
@@ -104,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
                                     MediaProjection mediaProjection = projectionManager.getMediaProjection(resultCode, data);
 
                                     if (mediaProjection != null) {
+                                        // ---------------- STEP 3 (prior Android 14) ---------------------
                                         startScreenCapture(mediaProjection);
                                     }
                                 } else {
@@ -112,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
                                         serviceIntent.putExtra("resultCode", resultCode);
                                         serviceIntent.putExtra("data", data);
 
+                                        // ---------------- STEP 3 (Android 14 and on) ---------------------
                                         ContextCompat.startForegroundService(this, serviceIntent);
                                     } catch (RuntimeException e) {
                                         Log.w(TAG, "Error while trying to get the MediaProjection instance: " + e.getMessage());
@@ -126,13 +131,9 @@ public class MainActivity extends AppCompatActivity {
         if (!isReceiverRegistered) {
             IntentFilter filter = new IntentFilter(ACTION_MEDIA_PROJECTION_STARTED);
             filter.addCategory(Intent.CATEGORY_DEFAULT);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                Log.d(TAG, "REGISTERING RECEIVER T");
-                LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter/*, Context.RECEIVER_NOT_EXPORTED*/);
-            } else {
-                Log.d(TAG, "REGISTERING RECEIVER <T");
-                LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter);
-            }
+
+            Log.d(TAG, "REGISTERING RECEIVER <T");
+            LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter);
             isReceiverRegistered = true;
         }
     }
@@ -148,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void requestScreenCapturePermission() {
+        // ---------------- STEP 1 ---------------------
         if (startMediaProjectionActivity != null) {
             Log.d(TAG, "REQUESTING SCREEN CAPTURE INTENT PERMISSION");
             mediaProjectionManager = (MediaProjectionManager)
