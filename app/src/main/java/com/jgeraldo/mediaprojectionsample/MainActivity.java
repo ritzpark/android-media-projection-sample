@@ -35,6 +35,12 @@ public class MainActivity extends AppCompatActivity {
 
     private MediaProjectionManager mediaProjectionManager;
 
+    private MediaProjection mMediaProjection;
+
+    private VirtualDisplay mVirtualDisplay;
+
+    private Button mButtonToggle;
+
     private Surface mSurface;
 
     private Handler mHandler;
@@ -56,11 +62,11 @@ public class MainActivity extends AppCompatActivity {
 
                 MediaProjectionManager projectionManager =
                         (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
-                MediaProjection mediaProjection = projectionManager.getMediaProjection(resultCode, data);
+                mMediaProjection = projectionManager.getMediaProjection(resultCode, data);
 
-                if (mediaProjection != null) {
+                if (mMediaProjection != null) {
                     // ---------------- STEP 4 ---------------------
-                    startScreenCapture(mediaProjection);
+                    startScreenCapture();
                 }
             }
         }
@@ -78,9 +84,13 @@ public class MainActivity extends AppCompatActivity {
 
         mHandler = new Handler(Looper.getMainLooper());
 
-        Button button = findViewById(R.id.button);
-        button.setOnClickListener(view -> {
-            requestScreenCapturePermission();
+        mButtonToggle = findViewById(R.id.button);
+        mButtonToggle.setOnClickListener(view -> {
+            if (mVirtualDisplay == null) {
+                requestScreenCapturePermission();
+            } else {
+                stopScreenCapture();
+            }
         });
     }
 
@@ -101,14 +111,14 @@ public class MainActivity extends AppCompatActivity {
                             if (result.getResultCode() == Activity.RESULT_OK) {
                                 Intent data = result.getData();
 
-                                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                                     MediaProjectionManager projectionManager =
                                             (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
-                                    MediaProjection mediaProjection = projectionManager.getMediaProjection(resultCode, data);
+                                    mMediaProjection = projectionManager.getMediaProjection(resultCode, data);
 
-                                    if (mediaProjection != null) {
+                                    if (mMediaProjection != null) {
                                         // ---------------- STEP 3 (prior Android 14) ---------------------
-                                        startScreenCapture(mediaProjection);
+                                        startScreenCapture();
                                     }
                                 } else {
                                     try {
@@ -146,6 +156,11 @@ public class MainActivity extends AppCompatActivity {
             LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
             isReceiverRegistered = false;
         }
+
+        if (mMediaProjection != null) {
+            mMediaProjection.stop();
+            mMediaProjection = null;
+        }
     }
 
     private void requestScreenCapturePermission() {
@@ -161,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void startScreenCapture(MediaProjection mediaProjection) {
+    public void startScreenCapture() {
         MediaProjection.Callback callback = new MediaProjection.Callback() {
             @Override
             public void onStop() {
@@ -170,9 +185,9 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        mediaProjection.registerCallback(callback, null);
+        mMediaProjection.registerCallback(callback, null);
 
-        VirtualDisplay virtualDisplay = mediaProjection.createVirtualDisplay(
+        mVirtualDisplay = mMediaProjection.createVirtualDisplay(
                 "ScreenCapture",
                 720,
                 1080,
@@ -182,6 +197,18 @@ public class MainActivity extends AppCompatActivity {
                 mSurface,
                 null,
                 mHandler);
+
+        mButtonToggle.setText("Stop");
+
         // Do whatever you need with the virtualDisplay
+    }
+
+    private void stopScreenCapture() {
+        if (mVirtualDisplay == null) {
+            return;
+        }
+        mVirtualDisplay.release();
+        mVirtualDisplay = null;
+        mButtonToggle.setText("Start");
     }
 }

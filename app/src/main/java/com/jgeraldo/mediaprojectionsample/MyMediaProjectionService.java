@@ -48,24 +48,20 @@ public class MyMediaProjectionService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION) == PackageManager.PERMISSION_GRANTED) {
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                // ---------------- STEP 3.1 ---------------------
-                startForeground(SERVICE_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
-            }
-
-            int resultCode = intent.getIntExtra("resultCode", -1);
-            Intent data = intent.getParcelableExtra("data");
-
-            Intent broadcastIntent = new Intent(this, MainActivity.MyBroadcastReceiver.class);
-            broadcastIntent.setAction(ACTION_MEDIA_PROJECTION_STARTED);
-            broadcastIntent.putExtra("resultCode", resultCode);
-            broadcastIntent.putExtra("data", data);
-
-            LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastIntent);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // ---------------- STEP 3.1 ---------------------
+            startForeground(SERVICE_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
         }
+
+        int resultCode = intent.getIntExtra("resultCode", -1);
+        Intent data = intent.getParcelableExtra("data");
+
+        Intent broadcastIntent = new Intent(this, MainActivity.MyBroadcastReceiver.class);
+        broadcastIntent.setAction(ACTION_MEDIA_PROJECTION_STARTED);
+        broadcastIntent.putExtra("resultCode", resultCode);
+        broadcastIntent.putExtra("data", data);
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(broadcastIntent);
 
         return START_STICKY;
     }
